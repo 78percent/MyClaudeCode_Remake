@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Any, Literal
+from typing import Any, Literal
+
+
 
 @dataclass
-class ContentBlock:
+class TextBlock:
     """
     A content block
     """
@@ -16,12 +18,12 @@ class ContentBlock:
         return {"text": self.text, "type": self.type}
 
     @classmethod
-    def from_api_dict(cls, data: dict[str, Any]) -> ContentBlock:
+    def from_api_dict(cls, data: dict[str, Any]) -> TextBlock:
         return cls(text=data["text"])
 
 
 @dataclass
-class ToolUseBox:
+class ToolUseBlock:
     """
     A tool use content block (model requesting tool execution)
     """
@@ -35,7 +37,7 @@ class ToolUseBox:
         return {"id": self.id, "name": self.name, "input": self.input, "type": self.type}
 
     @classmethod
-    def from_api_dict(cls, data: dict[str, Any]) -> ToolUseBox:
+    def from_api_dict(cls, data: dict[str, Any]) -> ToolUseBlock:
         return cls(id=data["id"], name=data["name"], input=data["input"], type=data["type"])
 
 
@@ -110,10 +112,135 @@ class ToolResultBlock:
         )
 
 
+@dataclass
+class ThinkingBlock:
+    """
+    An extended thinking content block.
+    """
+
+    thinking: str
+    signature: str
+    type: Literal['thinking'] = 'thinking'
+
+    def to_api_dict(self) -> dict[str, Any]:
+        return {"type": self.type, "thinking": self.thinking, "signature": self.signature}
+
+    @classmethod
+    def from_api_dict(cls, data: dict[str, Any]) -> ThinkingBlock:
+        return cls(
+            thinking=data["thinking"],
+            signature=data.get("signature", ""),
+        )
+
+@dataclass
+class RedactedThinkingBlock:
+    """
+    A redacted thinking block (content hidden by API).
+    """
+
+    data: str = ''
+    type: Literal['redacted_thinking'] = 'redacted_thinking'
+
+    def to_api_dict(self) -> dict[str, Any]:
+        return {"type": self.type, "data": self.data}
+
+    @classmethod
+    def from_api_dict(cls, data: dict[str, Any]) -> RedactedThinkingBlock:
+        return cls(
+            data.get("data", ""),
+        )
+
+
+@dataclass
+class ImageBlock:
+    """
+    An image content block.
+    """
+    source: ImageSource
+    type: Literal['image'] = 'image'
+
+    def to_api_dict(self) -> dict[str, Any]:
+        return {"type": self.type, "source": self.source.to_api_dict()}
+
+    @classmethod
+    def from_api_dict(cls, data: dict[str, Any]) -> ImageBlock:
+        return cls(source=ImageSource.from_api_dict(data["source"]))
 
 
 
 
+@dataclass
+class ImageSource:
+    """
+    Image source data.
+    """
+
+    type: Literal['base64'] = 'base64'
+    media_type: str = 'image/png'
+    data: str = ''
+
+    def to_api_dict(self) -> dict[str, Any]:
+        return {"type": self.type, "media_type": self.media_type, "data": self.data}
+
+    @classmethod
+    def from_api_dict(cls, data: dict[str, Any]) -> ImageSource:
+        return cls(
+            type=data.get("type", "base64"),
+            media_type=data.get("media_type", "image/png"),
+            data=data.get("data", ""),
+        )
+
+
+
+
+ContentBlock = (
+    TextBlock
+    | ToolUseBlock
+    | ToolResultBlock
+    | ThinkingBlock
+    | RedactedThinkingBlock
+    | ImageBlock
+)
+
+AssistantBlock = (
+    TextBlock
+    | ToolUseBlock
+    | ThinkingBlock
+    | RedactedThinkingBlock
+)
+
+UserContentBlock = (
+    TextBlock
+    | ToolResultBlock
+    | ImageBlock
+)
+
+def content_block_from_api_dict(data: dict[str, Any],) -> TextBlock:
+    block_type = data["type"]
+
+    match block_type:
+        case 'text':
+            return TextBlock.from_api_dict(data)
+
+        case "tool_use":
+            return ToolUseBlock.from_api_dict(data)
+
+        case "tool_result":
+            return ToolResultBlock.from_api_dict(data)
+
+        case "thinking":
+            return ThinkingBlock.from_api_dict(data)
+
+        case "redacted_thinking":
+            return RedactedThinkingBlock.from_api_dict(data)
+
+        case "image":
+            return ImageBlock.from_api_dict(data)
+
+        case _:
+            raise ValueError(
+                f"Unknown content block type: {block_type}"
+            )
 
 
 # block = ContentBlock("你好")
@@ -141,4 +268,38 @@ class ToolResultBlock:
 #
 # tubox = ToolUseBox.from_api_dict(test2_dict)
 # print(tubox)
+
+
+if __name__ == "__main__":
+    api_blocks = [
+        {
+            "type": "text",
+            "text": "准备读取文件",
+        },
+        {
+            "type": "tool_use",
+            "id": "toolu_123",
+            "name": "Read",
+            "input": {
+                "file_path": "hello.txt",
+            },
+        },
+        {
+            "type": "thinking",
+            "thinking": "我需要先查看文件",
+            "signature": "abc123",
+        },
+    ]
+
+    blocks = [
+        content_block_from_api_dict(data)
+        for data in api_blocks
+    ]
+
+    print("转换前的字典列表：")
+    print(api_blocks)
+
+    print("转换后的对象列表：")
+    for block in blocks:
+        print(block)
 
