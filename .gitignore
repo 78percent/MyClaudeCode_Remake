@@ -1,0 +1,18 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# JetBrains IDE
+.idea/
+.jbeval/
+*.iml
+
+# OS
+Thumbs.db
+.DS_Store
