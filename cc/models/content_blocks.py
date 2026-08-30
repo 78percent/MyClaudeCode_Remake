@@ -202,7 +202,7 @@ ContentBlock = (
     | ImageBlock
 )
 
-AssistantBlock = (
+AssistantContentBlock = (
     TextBlock
     | ToolUseBlock
     | ThinkingBlock
