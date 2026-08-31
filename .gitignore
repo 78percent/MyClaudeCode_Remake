@@ -1,18 +1,13 @@
-# Python
+.env
 .venv/
-venv/
 __pycache__/
 *.pyc
-*.pyo
 *.egg-info/
 dist/
 build/
-
-# JetBrains IDE
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .idea/
 .jbeval/
-*.iml
-
-# OS
-Thumbs.db
-.DS_Store
+.ua/
